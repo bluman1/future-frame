@@ -7,6 +7,7 @@ import { questions, getAllQuestions, getNextQuestion } from "@/data/questions";
 const Index = () => {
   const [currentQuestionId, setCurrentQuestionId] = useState(questions[0].id);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [questionHistory, setQuestionHistory] = useState<string[]>([questions[0].id]);
   const [isComplete, setIsComplete] = useState(false);
 
   const allQuestions = getAllQuestions(questions);
@@ -20,15 +21,19 @@ const Index = () => {
     const nextQuestion = getNextQuestion(currentQuestionId, updatedAnswers);
     if (nextQuestion) {
       setCurrentQuestionId(nextQuestion.id);
+      setQuestionHistory(prev => [...prev, nextQuestion.id]);
     } else {
       setIsComplete(true);
     }
   };
 
   const handlePrevious = () => {
-    const currentIndex = allQuestions.findIndex(q => q.id === currentQuestionId);
-    if (currentIndex > 0) {
-      setCurrentQuestionId(allQuestions[currentIndex - 1].id);
+    if (questionHistory.length > 1) {
+      const newHistory = [...questionHistory];
+      newHistory.pop(); // Remove current question
+      const previousQuestionId = newHistory[newHistory.length - 1];
+      setCurrentQuestionId(previousQuestionId);
+      setQuestionHistory(newHistory);
     }
   };
 
