@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QuestionOption } from "@/data/types";
 
 interface QuestionCardProps {
@@ -12,6 +12,7 @@ interface QuestionCardProps {
   onNext: (answer: string) => void;
   onPrevious: () => void;
   className?: string;
+  previousAnswer?: string;
 }
 
 export const QuestionCard = ({
@@ -21,10 +22,39 @@ export const QuestionCard = ({
   onNext,
   onPrevious,
   className,
+  previousAnswer = "",
 }: QuestionCardProps) => {
   const [answer, setAnswer] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [otherInput, setOtherInput] = useState("");
+
+  // Effect to handle setting previous answers when navigating
+  useEffect(() => {
+    if (previousAnswer) {
+      if (type === "checkbox") {
+        const answers = previousAnswer.split(", ");
+        const otherAnswer = answers.find(a => a.startsWith("Other: "));
+        if (otherAnswer) {
+          setOtherInput(otherAnswer.replace("Other: ", ""));
+          setSelectedOptions([...answers.filter(a => !a.startsWith("Other: ")), "other"]);
+        } else {
+          setSelectedOptions(answers);
+        }
+      } else {
+        if (previousAnswer.startsWith("Other: ")) {
+          setAnswer("other");
+          setOtherInput(previousAnswer.replace("Other: ", ""));
+        } else {
+          setAnswer(previousAnswer);
+        }
+      }
+    } else {
+      // Reset form when there's no previous answer
+      setAnswer("");
+      setSelectedOptions([]);
+      setOtherInput("");
+    }
+  }, [previousAnswer, type]);
 
   const handleNext = () => {
     if (type === "checkbox") {
@@ -40,9 +70,6 @@ export const QuestionCard = ({
     } else if (answer.trim()) {
       onNext(answer);
     }
-    setAnswer("");
-    setSelectedOptions([]);
-    setOtherInput("");
   };
 
   const handleCheckboxChange = (value: string) => {

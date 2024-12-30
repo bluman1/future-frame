@@ -11,7 +11,7 @@ const Index = () => {
 
   const allQuestions = getAllQuestions(questions);
   const currentQuestion = allQuestions.find(q => q.id === currentQuestionId);
-  const progress = (allQuestions.findIndex(q => q.id === currentQuestionId) / allQuestions.length) * 100;
+  const progress = (Object.keys(answers).length / allQuestions.length) * 100;
 
   const handleNext = (answer: string) => {
     const updatedAnswers = { ...answers, [currentQuestion!.question]: answer };
@@ -50,6 +50,7 @@ const Index = () => {
           {...currentQuestion}
           onNext={handleNext}
           onPrevious={handlePrevious}
+          previousAnswer={answers[currentQuestion.question]}
         />
       )}
     </div>
