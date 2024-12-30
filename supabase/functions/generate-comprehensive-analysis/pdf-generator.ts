@@ -22,10 +22,28 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
     return currentPage;
   };
 
+  // Helper function to format markdown text
+  const formatMarkdown = (text: string): string => {
+    // Remove markdown bold syntax and handle the text separately
+    return text.replace(/\*\*(.*?)\*\*/g, '$1');
+  };
+
+  // Helper function to check if text should be bold (was previously wrapped in **)
+  const shouldBeBold = (text: string, originalText: string): boolean => {
+    const boldPattern = /\*\*(.*?)\*\*/g;
+    let match;
+    while ((match = boldPattern.exec(originalText)) !== null) {
+      if (match[1] === text) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Helper function to write text and handle overflow
-  const writeText = (text: string, { fontSize: size = fontSize, font = timesRomanFont, indent = 0 } = {}) => {
-    // Replace problematic characters and normalize line endings
-    text = text.replace(/[\r\n]+/g, ' ').trim();
+  const writeText = (text: string, originalText: string, { fontSize: size = fontSize, indent = 0 } = {}) => {
+    // Format the text first
+    text = formatMarkdown(text);
     
     if (yPosition < margin + size) {
       currentPage = addNewPage();
@@ -34,31 +52,41 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
     const maxWidth = width - 2 * margin - indent;
     const words = text.split(' ');
     let currentLine = '';
+    let currentWords: string[] = [];
 
     for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      currentWords.push(word);
+      const testLine = currentWords.join(' ');
+      const font = shouldBeBold(testLine, originalText) ? timesBoldFont : timesRomanFont;
       const testWidth = font.widthOfTextAtSize(testLine, size);
 
       if (testWidth > maxWidth) {
+        // Remove the last word that caused overflow
+        currentWords.pop();
+        currentLine = currentWords.join(' ');
+        const lineFont = shouldBeBold(currentLine, originalText) ? timesBoldFont : timesRomanFont;
+        
         currentPage.drawText(currentLine, {
           x: margin + indent,
           y: yPosition,
           size: size,
-          font: font,
+          font: lineFont,
           color: rgb(0, 0, 0),
         });
+        
         yPosition -= lineHeight;
-        currentLine = word;
+        currentWords = [word];
 
         if (yPosition < margin + size) {
           currentPage = addNewPage();
         }
-      } else {
-        currentLine = testLine;
       }
     }
 
-    if (currentLine) {
+    if (currentWords.length > 0) {
+      currentLine = currentWords.join(' ');
+      const font = shouldBeBold(currentLine, originalText) ? timesBoldFont : timesRomanFont;
+      
       currentPage.drawText(currentLine, {
         x: margin + indent,
         y: yPosition,
@@ -76,16 +104,19 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
   for (const section of sections) {
     if (!section) continue;
 
+    // Store original text for bold checking
+    const originalText = section;
+
     if (section.startsWith('# ')) {
-      writeText(section.substring(2), { fontSize: titleSize, font: timesBoldFont });
+      writeText(section.substring(2), originalText, { fontSize: titleSize, font: timesBoldFont });
       yPosition -= lineHeight;
     } else if (section.startsWith('## ')) {
-      writeText(section.substring(3), { fontSize: titleSize - 2, font: timesBoldFont });
+      writeText(section.substring(3), originalText, { fontSize: titleSize - 2, font: timesBoldFont });
       yPosition -= lineHeight;
     } else if (section.startsWith('- ')) {
-      writeText('•' + section.substring(1), { indent: 20 });
+      writeText('•' + section.substring(1), originalText, { indent: 20 });
     } else {
-      writeText(section);
+      writeText(section, originalText);
       yPosition -= lineHeight / 2;
     }
 
