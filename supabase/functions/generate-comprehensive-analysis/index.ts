@@ -20,9 +20,6 @@ async function generatePDF(content: string): Promise<Uint8Array> {
   const margin = 50;
   const lineHeight = fontSize * 1.5;
   
-  // Split content into paragraphs
-  const paragraphs = content.split('\n\n').map(p => p.trim());
-  
   let currentPage = pdfDoc.addPage();
   let { width, height } = currentPage.getSize();
   let yPosition = height - margin;
@@ -36,60 +33,76 @@ async function generatePDF(content: string): Promise<Uint8Array> {
 
   // Helper function to write text and handle overflow
   const writeText = (text: string, { fontSize: size = fontSize, font = timesRomanFont, indent = 0 } = {}) => {
-    // Check if we need a new page
+    // Replace problematic characters and normalize line endings
+    text = text.replace(/[\r\n]+/g, ' ').trim();
+    
     if (yPosition < margin + size) {
       currentPage = addNewPage();
     }
 
-    // Split text to fit width
     const maxWidth = width - 2 * margin - indent;
-    let remainingText = text;
-    
-    while (remainingText.length > 0) {
-      let i = remainingText.length;
-      let textWidth = font.widthOfTextAtSize(remainingText, size);
-      
-      while (textWidth > maxWidth) {
-        i = remainingText.lastIndexOf(' ', i - 1);
-        textWidth = font.widthOfTextAtSize(remainingText.substring(0, i), size);
+    const words = text.split(' ');
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = font.widthOfTextAtSize(testLine, size);
+
+      if (testWidth > maxWidth) {
+        // Write current line
+        currentPage.drawText(currentLine, {
+          x: margin + indent,
+          y: yPosition,
+          size: size,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+        yPosition -= lineHeight;
+        currentLine = word;
+
+        // Check if we need a new page
+        if (yPosition < margin + size) {
+          currentPage = addNewPage();
+        }
+      } else {
+        currentLine = testLine;
       }
-      
-      const line = remainingText.substring(0, i);
-      
-      currentPage.drawText(line, {
+    }
+
+    // Write remaining text
+    if (currentLine) {
+      currentPage.drawText(currentLine, {
         x: margin + indent,
         y: yPosition,
         size: size,
         font: font,
         color: rgb(0, 0, 0),
       });
-      
       yPosition -= lineHeight;
-      remainingText = remainingText.substring(i).trim();
-      
-      if (remainingText.length > 0 && yPosition < margin + size) {
-        currentPage = addNewPage();
-      }
     }
   };
 
   // Process markdown-like content
-  for (const paragraph of paragraphs) {
-    // Handle headers
-    if (paragraph.startsWith('# ')) {
-      writeText(paragraph.substring(2), { fontSize: titleSize, font: timesBoldFont });
+  const sections = content.split('\n\n').map(section => section.trim());
+  
+  for (const section of sections) {
+    if (!section) continue;
+
+    if (section.startsWith('# ')) {
+      writeText(section.substring(2), { fontSize: titleSize, font: timesBoldFont });
       yPosition -= lineHeight;
-    } else if (paragraph.startsWith('## ')) {
-      writeText(paragraph.substring(3), { fontSize: titleSize - 2, font: timesBoldFont });
+    } else if (section.startsWith('## ')) {
+      writeText(section.substring(3), { fontSize: titleSize - 2, font: timesBoldFont });
       yPosition -= lineHeight;
-    } else if (paragraph.startsWith('- ')) {
-      // Handle bullet points
-      writeText('•' + paragraph.substring(1), { indent: 20 });
+    } else if (section.startsWith('- ')) {
+      writeText('•' + section.substring(1), { indent: 20 });
     } else {
-      // Regular paragraph
-      writeText(paragraph);
+      writeText(section);
       yPosition -= lineHeight / 2;
     }
+
+    // Add extra space between sections
+    yPosition -= lineHeight / 2;
   }
 
   return await pdfDoc.save();
@@ -118,7 +131,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
