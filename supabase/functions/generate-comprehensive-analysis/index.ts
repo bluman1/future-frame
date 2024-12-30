@@ -12,49 +12,84 @@ const corsHeaders = {
 async function generatePDF(content: string): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-  const page = pdfDoc.addPage();
-  const { width, height } = page.getSize();
+  const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+  
+  // PDF settings
   const fontSize = 12;
+  const titleSize = 16;
   const margin = 50;
-  const lineHeight = fontSize * 1.2;
-
-  // Split content into lines that fit within page width
-  const words = content.split(' ');
-  let currentLine = '';
+  const lineHeight = fontSize * 1.5;
+  
+  // Split content into paragraphs
+  const paragraphs = content.split('\n\n').map(p => p.trim());
+  
+  let currentPage = pdfDoc.addPage();
+  let { width, height } = currentPage.getSize();
   let yPosition = height - margin;
-  const lines: string[] = [];
 
-  for (const word of words) {
-    const testLine = currentLine + (currentLine ? ' ' : '') + word;
-    const textWidth = timesRomanFont.widthOfTextAtSize(testLine, fontSize);
+  // Helper function to add a new page
+  const addNewPage = () => {
+    currentPage = pdfDoc.addPage();
+    yPosition = height - margin;
+    return currentPage;
+  };
 
-    if (textWidth > width - 2 * margin) {
-      lines.push(currentLine);
-      currentLine = word;
+  // Helper function to write text and handle overflow
+  const writeText = (text: string, { fontSize: size = fontSize, font = timesRomanFont, indent = 0 } = {}) => {
+    // Check if we need a new page
+    if (yPosition < margin + size) {
+      currentPage = addNewPage();
+    }
+
+    // Split text to fit width
+    const maxWidth = width - 2 * margin - indent;
+    let remainingText = text;
+    
+    while (remainingText.length > 0) {
+      let i = remainingText.length;
+      let textWidth = font.widthOfTextAtSize(remainingText, size);
+      
+      while (textWidth > maxWidth) {
+        i = remainingText.lastIndexOf(' ', i - 1);
+        textWidth = font.widthOfTextAtSize(remainingText.substring(0, i), size);
+      }
+      
+      const line = remainingText.substring(0, i);
+      
+      currentPage.drawText(line, {
+        x: margin + indent,
+        y: yPosition,
+        size: size,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      
+      yPosition -= lineHeight;
+      remainingText = remainingText.substring(i).trim();
+      
+      if (remainingText.length > 0 && yPosition < margin + size) {
+        currentPage = addNewPage();
+      }
+    }
+  };
+
+  // Process markdown-like content
+  for (const paragraph of paragraphs) {
+    // Handle headers
+    if (paragraph.startsWith('# ')) {
+      writeText(paragraph.substring(2), { fontSize: titleSize, font: timesBoldFont });
+      yPosition -= lineHeight;
+    } else if (paragraph.startsWith('## ')) {
+      writeText(paragraph.substring(3), { fontSize: titleSize - 2, font: timesBoldFont });
+      yPosition -= lineHeight;
+    } else if (paragraph.startsWith('- ')) {
+      // Handle bullet points
+      writeText('•' + paragraph.substring(1), { indent: 20 });
     } else {
-      currentLine = testLine;
+      // Regular paragraph
+      writeText(paragraph);
+      yPosition -= lineHeight / 2;
     }
-  }
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  // Add lines to the page, creating new pages as needed
-  for (const line of lines) {
-    if (yPosition < margin) {
-      const newPage = pdfDoc.addPage();
-      yPosition = height - margin;
-    }
-
-    page.drawText(line, {
-      x: margin,
-      y: yPosition,
-      size: fontSize,
-      font: timesRomanFont,
-      color: rgb(0, 0, 0),
-    });
-
-    yPosition -= lineHeight;
   }
 
   return await pdfDoc.save();
@@ -74,6 +109,8 @@ serve(async (req) => {
       .map(([question, answer]) => `${question}: ${answer}`)
       .join('\n');
 
+    console.log('Generating analysis for answers:', formattedAnswers);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -87,38 +124,40 @@ serve(async (req) => {
             role: 'system',
             content: `You are a professional life coach and personal development expert. Create a comprehensive analysis and action plan based on the user's vision board responses. Include:
 
-1. Executive Summary
-   - Brief overview of goals and aspirations
-   - Key themes identified
+# Vision Board Analysis
 
-2. Detailed Analysis
-   - Strengths and Growth Areas
-   - Potential Synergies Between Goals
-   - Risk Assessment
+## Executive Summary
+- Brief overview of goals and aspirations
+- Key themes identified
 
-3. Strategic Recommendations
-   - Immediate Actions (Next 30 days)
-   - Short-term Goals (3-6 months)
-   - Medium-term Goals (6-12 months)
-   - Long-term Vision (1-5 years)
+## Detailed Analysis
+- Strengths and Growth Areas
+- Potential Synergies Between Goals
+- Risk Assessment
 
-4. Implementation Framework
-   - Weekly Action Items
-   - Monthly Milestones
-   - Resources Needed
-   - Progress Tracking Methods
+## Strategic Recommendations
+- Immediate Actions (Next 30 days)
+- Short-term Goals (3-6 months)
+- Medium-term Goals (6-12 months)
+- Long-term Vision (1-5 years)
 
-5. Success Metrics
-   - Key Performance Indicators
-   - Milestone Achievements
-   - Progress Review Schedule
+## Implementation Framework
+- Weekly Action Items
+- Monthly Milestones
+- Resources Needed
+- Progress Tracking Methods
 
-6. Potential Challenges and Solutions
-   - Anticipated Obstacles
-   - Mitigation Strategies
-   - Contingency Plans
+## Success Metrics
+- Key Performance Indicators
+- Milestone Achievements
+- Progress Review Schedule
 
-Format your response using markdown with clear headers, bullet points, and emphasis where appropriate.`
+## Potential Challenges and Solutions
+- Anticipated Obstacles
+- Mitigation Strategies
+- Contingency Plans
+
+Format your response using the exact headers above, with bullet points for each section.`
           },
           {
             role: 'user',
@@ -133,8 +172,11 @@ Format your response using markdown with clear headers, bullet points, and empha
     const data = await response.json();
     const analysis = data.choices[0].message.content;
     
+    console.log('Generated analysis:', analysis);
+
     // Generate PDF
     const pdfBytes = await generatePDF(analysis);
+    console.log('PDF generated successfully');
 
     return new Response(
       JSON.stringify({ 
