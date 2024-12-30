@@ -11,7 +11,7 @@ const Landing = () => {
         <div className="text-center space-y-6 max-w-3xl mx-auto animate-fade-up">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             Discover Your Path to{" "}
-            <span className="text-primary">Personal Growth</span>
+            <span className="text-primary">Personal Growth in 2025</span>
           </h1>
           
           <p className="text-xl text-muted-foreground">
