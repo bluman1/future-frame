@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
+import { QuestionOption } from "@/data/questions";
 
 interface QuestionCardProps {
   question: string;
-  type: "text" | "multiple-choice";
-  options?: string[];
+  type: "text" | "multiple-choice" | "checkbox";
+  options?: QuestionOption[];
   onNext: (answer: string) => void;
   onPrevious: () => void;
   className?: string;
@@ -21,12 +23,25 @@ export const QuestionCard = ({
   className,
 }: QuestionCardProps) => {
   const [answer, setAnswer] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   const handleNext = () => {
-    if (answer.trim()) {
+    if (type === "checkbox") {
+      onNext(selectedOptions.join(", "));
+    } else if (answer.trim()) {
       onNext(answer);
-      setAnswer("");
     }
+    setAnswer("");
+    setSelectedOptions([]);
+  };
+
+  const handleCheckboxChange = (value: string) => {
+    setSelectedOptions((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((item) => item !== value);
+      }
+      return [...prev, value];
+    });
   };
 
   return (
@@ -45,20 +60,38 @@ export const QuestionCard = ({
           className="mb-6"
           placeholder="Type your answer here..."
         />
+      ) : type === "checkbox" ? (
+        <div className="space-y-3 mb-6">
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={option.value}
+                checked={selectedOptions.includes(option.value)}
+                onCheckedChange={() => handleCheckboxChange(option.value)}
+              />
+              <label
+                htmlFor={option.value}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {option.label}
+              </label>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-3 mb-6">
           {options.map((option) => (
             <button
-              key={option}
-              onClick={() => setAnswer(option)}
+              key={option.value}
+              onClick={() => setAnswer(option.value)}
               className={cn(
                 "w-full p-4 text-left rounded-lg transition-all duration-200",
-                answer === option
+                answer === option.value
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary hover:bg-secondary/80"
               )}
             >
-              {option}
+              {option.label}
             </button>
           ))}
         </div>
@@ -74,7 +107,7 @@ export const QuestionCard = ({
         </Button>
         <Button
           onClick={handleNext}
-          disabled={!answer.trim()}
+          disabled={type === "checkbox" ? selectedOptions.length === 0 : !answer.trim()}
           className="transition-all duration-200 hover:translate-x-[4px]"
         >
           Next
