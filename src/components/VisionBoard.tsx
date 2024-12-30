@@ -26,11 +26,11 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         // Create a new session
         const { data: session, error: sessionError } = await supabase
           .from('sessions')
-          .insert({})
-          .select()
+          .insert([{}])
+          .select('*')
           .single();
 
-        if (sessionError) {
+        if (sessionError || !session) {
           console.error('Session creation error:', sessionError);
           throw sessionError;
         }
@@ -59,6 +59,11 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         // Generate initial analysis
         console.log('Generating initial analysis...');
         const result = await generateVisionBoardAnalysis(answers);
+        
+        if (!result) {
+          throw new Error('Failed to generate initial analysis');
+        }
+        
         setAnalysis(result);
 
         // Update session with short analysis immediately after generation
@@ -67,14 +72,24 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           .from('sessions')
           .update({ short_analysis: result })
           .eq('id', session.id)
-          .select();
+          .select('*')
+          .single();
 
-        if (updateError) {
+        if (updateError || !updateData) {
           console.error('Short analysis update error:', updateError);
           throw updateError;
         }
         
         console.log('Session updated with short analysis:', updateData);
+        
+        // Verify the update
+        const { data: verifyData } = await supabase
+          .from('sessions')
+          .select('short_analysis')
+          .eq('id', session.id)
+          .single();
+          
+        console.log('Verified short analysis in database:', verifyData);
       } catch (error) {
         console.error('Error storing session data:', error);
         toast({
@@ -106,18 +121,32 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         .from('sessions')
         .update({ email })
         .eq('id', sessionId)
-        .select();
+        .select('*')
+        .single();
 
-      if (emailUpdateError) {
+      if (emailUpdateError || !emailUpdateData) {
         console.error('Email update error:', emailUpdateError);
         throw emailUpdateError;
       }
       
       console.log('Session updated with email:', emailUpdateData);
 
+      // Verify email update
+      const { data: verifyEmailData } = await supabase
+        .from('sessions')
+        .select('email')
+        .eq('id', sessionId)
+        .single();
+        
+      console.log('Verified email in database:', verifyEmailData);
+
       // Then generate the comprehensive analysis and PDF
       console.log('Generating comprehensive analysis and PDF...');
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
+      
+      if (!fullAnalysis || !pdf) {
+        throw new Error('Failed to generate comprehensive analysis or PDF');
+      }
       
       // Update session with comprehensive analysis after generation
       console.log('Updating session with comprehensive analysis...');
@@ -125,14 +154,24 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         .from('sessions')
         .update({ comprehensive_analysis: fullAnalysis })
         .eq('id', sessionId)
-        .select();
+        .select('*')
+        .single();
 
-      if (analysisUpdateError) {
+      if (analysisUpdateError || !analysisUpdateData) {
         console.error('Comprehensive analysis update error:', analysisUpdateError);
         throw analysisUpdateError;
       }
       
       console.log('Session updated with comprehensive analysis:', analysisUpdateData);
+      
+      // Verify comprehensive analysis update
+      const { data: verifyAnalysisData } = await supabase
+        .from('sessions')
+        .select('comprehensive_analysis')
+        .eq('id', sessionId)
+        .single();
+        
+      console.log('Verified comprehensive analysis in database:', verifyAnalysisData);
       
       // Handle PDF download
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
