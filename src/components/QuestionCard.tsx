@@ -24,15 +24,25 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   const [answer, setAnswer] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [otherInput, setOtherInput] = useState("");
 
   const handleNext = () => {
     if (type === "checkbox") {
-      onNext(selectedOptions.join(", "));
+      const answers = selectedOptions.map(opt => {
+        if (opt === "other" && otherInput) {
+          return `Other: ${otherInput}`;
+        }
+        return opt;
+      });
+      onNext(answers.join(", "));
+    } else if (answer === "other" && otherInput) {
+      onNext(`Other: ${otherInput}`);
     } else if (answer.trim()) {
       onNext(answer);
     }
     setAnswer("");
     setSelectedOptions([]);
+    setOtherInput("");
   };
 
   const handleCheckboxChange = (value: string) => {
@@ -43,6 +53,9 @@ export const QuestionCard = ({
       return [...prev, value];
     });
   };
+
+  const showOtherInput = (type === "checkbox" && selectedOptions.includes("other")) ||
+    (type === "multiple-choice" && answer === "other");
 
   return (
     <div
@@ -77,6 +90,14 @@ export const QuestionCard = ({
               </label>
             </div>
           ))}
+          {showOtherInput && (
+            <Input
+              value={otherInput}
+              onChange={(e) => setOtherInput(e.target.value.slice(0, 100))}
+              placeholder="Specify other (max 100 characters)..."
+              className="mt-2"
+            />
+          )}
         </div>
       ) : (
         <div className="space-y-3 mb-6">
@@ -94,6 +115,14 @@ export const QuestionCard = ({
               {option.label}
             </button>
           ))}
+          {showOtherInput && (
+            <Input
+              value={otherInput}
+              onChange={(e) => setOtherInput(e.target.value.slice(0, 100))}
+              placeholder="Specify other (max 100 characters)..."
+              className="mt-2"
+            />
+          )}
         </div>
       )}
 
@@ -107,7 +136,11 @@ export const QuestionCard = ({
         </Button>
         <Button
           onClick={handleNext}
-          disabled={type === "checkbox" ? selectedOptions.length === 0 : !answer.trim()}
+          disabled={
+            type === "checkbox"
+              ? selectedOptions.length === 0 || (selectedOptions.includes("other") && !otherInput.trim())
+              : !answer.trim() || (answer === "other" && !otherInput.trim())
+          }
           className="transition-all duration-200 hover:translate-x-[4px]"
         >
           Next
