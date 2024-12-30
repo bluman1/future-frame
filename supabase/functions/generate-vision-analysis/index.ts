@@ -9,18 +9,27 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Received request to generate vision analysis');
     const { answers } = await req.json();
     
+    if (!answers || Object.keys(answers).length === 0) {
+      console.error('No answers provided in request');
+      throw new Error('No answers provided');
+    }
+
+    console.log('Formatting answers for analysis');
     // Format the answers for the prompt
     const formattedAnswers = Object.entries(answers)
       .map(([question, answer]) => `${question}: ${answer}`)
       .join('\n');
 
+    console.log('Calling OpenAI API');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -49,12 +58,25 @@ Keep your response clear, encouraging, and actionable. Format in markdown.`
     });
 
     const data = await response.json();
-    return new Response(JSON.stringify({ analysis: data.choices[0].message.content }), {
+    console.log('Received response from OpenAI');
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid response from OpenAI:', data);
+      throw new Error('Invalid response from OpenAI');
+    }
+
+    const analysis = data.choices[0].message.content;
+    console.log('Successfully generated analysis');
+
+    return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error in generate-vision-analysis function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Failed to generate vision board analysis'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
