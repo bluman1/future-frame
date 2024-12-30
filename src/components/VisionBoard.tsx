@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { generateVisionBoardAnalysis, generateComprehensiveAnalysis } from "@/utils/openai";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AnalysisSection } from "./vision-board/AnalysisSection";
+import { EmailSection } from "./vision-board/EmailSection";
+import { AnswersSection } from "./vision-board/AnswersSection";
 
 interface VisionBoardProps {
   answers: Record<string, string>;
@@ -28,11 +29,15 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           .from('sessions')
           .insert([{}])
           .select('*')
-          .single();
+          .maybeSingle();
 
-        if (sessionError || !session) {
+        if (sessionError) {
           console.error('Session creation error:', sessionError);
           throw sessionError;
+        }
+
+        if (!session) {
+          throw new Error('No session data returned after creation');
         }
         
         console.log('Session created:', session);
@@ -73,21 +78,30 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           .update({ short_analysis: result })
           .eq('id', session.id)
           .select('*')
-          .single();
+          .maybeSingle();
 
-        if (updateError || !updateData) {
+        if (updateError) {
           console.error('Short analysis update error:', updateError);
           throw updateError;
+        }
+
+        if (!updateData) {
+          throw new Error('No data returned after updating short analysis');
         }
         
         console.log('Session updated with short analysis:', updateData);
         
         // Verify the update
-        const { data: verifyData } = await supabase
+        const { data: verifyData, error: verifyError } = await supabase
           .from('sessions')
           .select('short_analysis')
           .eq('id', session.id)
-          .single();
+          .maybeSingle();
+
+        if (verifyError) {
+          console.error('Verification error:', verifyError);
+          throw verifyError;
+        }
           
         console.log('Verified short analysis in database:', verifyData);
       } catch (error) {
@@ -122,21 +136,30 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         .update({ email })
         .eq('id', sessionId)
         .select('*')
-        .single();
+        .maybeSingle();
 
-      if (emailUpdateError || !emailUpdateData) {
+      if (emailUpdateError) {
         console.error('Email update error:', emailUpdateError);
         throw emailUpdateError;
+      }
+
+      if (!emailUpdateData) {
+        throw new Error('No data returned after updating email');
       }
       
       console.log('Session updated with email:', emailUpdateData);
 
       // Verify email update
-      const { data: verifyEmailData } = await supabase
+      const { data: verifyEmailData, error: verifyEmailError } = await supabase
         .from('sessions')
         .select('email')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
+
+      if (verifyEmailError) {
+        console.error('Email verification error:', verifyEmailError);
+        throw verifyEmailError;
+      }
         
       console.log('Verified email in database:', verifyEmailData);
 
@@ -155,21 +178,30 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         .update({ comprehensive_analysis: fullAnalysis })
         .eq('id', sessionId)
         .select('*')
-        .single();
+        .maybeSingle();
 
-      if (analysisUpdateError || !analysisUpdateData) {
+      if (analysisUpdateError) {
         console.error('Comprehensive analysis update error:', analysisUpdateError);
         throw analysisUpdateError;
+      }
+
+      if (!analysisUpdateData) {
+        throw new Error('No data returned after updating comprehensive analysis');
       }
       
       console.log('Session updated with comprehensive analysis:', analysisUpdateData);
       
       // Verify comprehensive analysis update
-      const { data: verifyAnalysisData } = await supabase
+      const { data: verifyAnalysisData, error: verifyAnalysisError } = await supabase
         .from('sessions')
         .select('comprehensive_analysis')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
+
+      if (verifyAnalysisError) {
+        console.error('Analysis verification error:', verifyAnalysisError);
+        throw verifyAnalysisError;
+      }
         
       console.log('Verified comprehensive analysis in database:', verifyAnalysisData);
       
@@ -223,65 +255,21 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     >
       <h2 className="text-3xl font-bold mb-8 text-center">Your Vision Board</h2>
       
-      {/* AI Analysis Section */}
-      <div className="mb-8 p-6 rounded-xl bg-primary/5 backdrop-blur-sm">
-        <h3 className="text-2xl font-semibold mb-4">Your Personal Analysis</h3>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <div 
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: formatMarkdown(analysis) }}
-          />
-        )}
-      </div>
+      <AnalysisSection 
+        isLoading={isLoading}
+        analysis={analysis}
+        formatMarkdown={formatMarkdown}
+      />
 
-      {/* Email Collection Form */}
-      <div className="p-6 rounded-xl bg-secondary/50 backdrop-blur-sm">
-        <h3 className="text-xl font-semibold mb-4">Get Your Comprehensive Review</h3>
-        <p className="text-muted-foreground mb-4">
-          Enter your email to receive a detailed vision board review with personalized recommendations, action steps, and a comprehensive PDF report.
-        </p>
-        <div className="space-y-4">
-          <div className="flex gap-4">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1"
-            />
-            <Button 
-              onClick={handleEmailSubmit}
-              disabled={!email || isSubmitting}
-            >
-              {isSubmitting ? "Generating..." : "Download PDF Report"}
-            </Button>
-          </div>
-          {pdfGenerated && (
-            <div className="text-sm text-green-600 font-medium">
-              ✓ Your PDF report has been successfully generated and downloaded!
-            </div>
-          )}
-        </div>
-      </div>
+      <EmailSection 
+        email={email}
+        setEmail={setEmail}
+        handleEmailSubmit={handleEmailSubmit}
+        isSubmitting={isSubmitting}
+        pdfGenerated={pdfGenerated}
+      />
 
-      {/* Original Answers Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.entries(answers).map(([question, answer]) => (
-          <div
-            key={question}
-            className="p-6 rounded-xl bg-secondary/50 backdrop-blur-sm"
-          >
-            <h3 className="font-medium text-sm text-muted-foreground mb-2">
-              {question}
-            </h3>
-            <p className="text-lg">{answer}</p>
-          </div>
-        ))}
-      </div>
+      <AnswersSection answers={answers} />
     </div>
   );
 };
