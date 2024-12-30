@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { generateVisionBoardAnalysis } from "@/utils/openai";
+import { generateVisionBoardAnalysis, generateComprehensiveAnalysis } from "@/utils/openai";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -38,13 +38,35 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
   const handleEmailSubmit = async () => {
     setIsSubmitting(true);
-    // Here you would typically send the email to your backend
-    // For now, we'll just show a success message
-    toast({
-      title: "Success!",
-      description: "We'll send your comprehensive vision board review shortly.",
-    });
-    setIsSubmitting(false);
+    try {
+      const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
+      
+      // Convert the PDF bytes array back to a Uint8Array and create a blob
+      const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'vision-board-analysis.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success!",
+        description: "Your comprehensive vision board analysis has been downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate your comprehensive analysis. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatMarkdown = (text: string) => {
@@ -88,7 +110,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       <div className="p-6 rounded-xl bg-secondary/50 backdrop-blur-sm">
         <h3 className="text-xl font-semibold mb-4">Get Your Comprehensive Review</h3>
         <p className="text-muted-foreground mb-4">
-          Enter your email to receive a detailed vision board review with personalized recommendations and action steps.
+          Enter your email to receive a detailed vision board review with personalized recommendations, action steps, and a comprehensive PDF report.
         </p>
         <div className="flex gap-4">
           <Input
@@ -102,7 +124,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
             onClick={handleEmailSubmit}
             disabled={!email || isSubmitting}
           >
-            {isSubmitting ? "Sending..." : "Send to Email"}
+            {isSubmitting ? "Generating..." : "Download PDF Report"}
           </Button>
         </div>
       </div>
