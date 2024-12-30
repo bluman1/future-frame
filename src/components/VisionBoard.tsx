@@ -30,7 +30,12 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           .select()
           .single();
 
-        if (sessionError) throw sessionError;
+        if (sessionError) {
+          console.error('Session creation error:', sessionError);
+          throw sessionError;
+        }
+        
+        console.log('Session created:', session);
         setSessionId(session.id);
 
         // Store all answers
@@ -44,19 +49,28 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           .from('session_answers')
           .insert(answersToInsert);
 
-        if (answersError) throw answersError;
+        if (answersError) {
+          console.error('Answers storage error:', answersError);
+          throw answersError;
+        }
 
         // Generate and store initial analysis
         const result = await generateVisionBoardAnalysis(answers);
         setAnalysis(result);
 
         // Update session with short analysis
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('sessions')
           .update({ short_analysis: result })
-          .eq('id', session.id);
+          .eq('id', session.id)
+          .select();
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Short analysis update error:', updateError);
+          throw updateError;
+        }
+        
+        console.log('Session updated with short analysis:', updateData);
       } catch (error) {
         console.error('Error storing session data:', error);
         toast({
@@ -73,7 +87,10 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   }, [answers]);
 
   const handleEmailSubmit = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.error('No session ID available');
+      return;
+    }
     
     setIsSubmitting(true);
     setPdfGenerated(false);
@@ -81,15 +98,21 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
       
       // Update session with email and comprehensive analysis
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('sessions')
         .update({
           email,
           comprehensive_analysis: fullAnalysis
         })
-        .eq('id', sessionId);
+        .eq('id', sessionId)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Session update error:', updateError);
+        throw updateError;
+      }
+      
+      console.log('Session updated with email and comprehensive analysis:', updateData);
       
       // Convert the PDF bytes array back to a Uint8Array and create a blob
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
