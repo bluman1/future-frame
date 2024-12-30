@@ -14,14 +14,14 @@ export const generateVisionBoardAnalysis = async (answers: Record<string, string
       .map(([question, answer]) => `Question: ${question}\nAnswer: ${answer}`)
       .join('\n\n');
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
