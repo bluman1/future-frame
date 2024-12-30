@@ -9,7 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      session_answers: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: string
+          question: string
+          session_id: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: string
+          question: string
+          session_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: string
+          question?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          comprehensive_analysis: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          short_analysis: string | null
+        }
+        Insert: {
+          comprehensive_analysis?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          short_analysis?: string | null
+        }
+        Update: {
+          comprehensive_analysis?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          short_analysis?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

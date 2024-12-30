@@ -4,6 +4,7 @@ import { generateVisionBoardAnalysis, generateComprehensiveAnalysis } from "@/ut
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VisionBoardProps {
   answers: Record<string, string>;
@@ -16,17 +17,51 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchAnalysis = async () => {
+    const createSession = async () => {
       try {
+        // Create a new session
+        const { data: session, error: sessionError } = await supabase
+          .from('sessions')
+          .insert({})
+          .select()
+          .single();
+
+        if (sessionError) throw sessionError;
+        setSessionId(session.id);
+
+        // Store all answers
+        const answersToInsert = Object.entries(answers).map(([question, answer]) => ({
+          session_id: session.id,
+          question,
+          answer
+        }));
+
+        const { error: answersError } = await supabase
+          .from('session_answers')
+          .insert(answersToInsert);
+
+        if (answersError) throw answersError;
+
+        // Generate and store initial analysis
         const result = await generateVisionBoardAnalysis(answers);
         setAnalysis(result);
+
+        // Update session with short analysis
+        const { error: updateError } = await supabase
+          .from('sessions')
+          .update({ short_analysis: result })
+          .eq('id', session.id);
+
+        if (updateError) throw updateError;
       } catch (error) {
+        console.error('Error storing session data:', error);
         toast({
           title: "Error",
-          description: "Failed to generate vision board analysis. Please try again.",
+          description: "Failed to store your vision board data. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -34,14 +69,27 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       }
     };
 
-    fetchAnalysis();
+    createSession();
   }, [answers]);
 
   const handleEmailSubmit = async () => {
+    if (!sessionId) return;
+    
     setIsSubmitting(true);
     setPdfGenerated(false);
     try {
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
+      
+      // Update session with email and comprehensive analysis
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          email,
+          comprehensive_analysis: fullAnalysis
+        })
+        .eq('id', sessionId);
+
+      if (updateError) throw updateError;
       
       // Convert the PDF bytes array back to a Uint8Array and create a blob
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
@@ -62,6 +110,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         description: "Your comprehensive vision board analysis has been downloaded.",
       });
     } catch (error) {
+      console.error('Error generating comprehensive analysis:', error);
       toast({
         title: "Error",
         description: "Failed to generate your comprehensive analysis. Please try again.",
