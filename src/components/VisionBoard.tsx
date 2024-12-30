@@ -54,11 +54,15 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
           throw answersError;
         }
 
-        // Generate and store initial analysis
+        console.log('Answers stored successfully');
+
+        // Generate initial analysis
+        console.log('Generating initial analysis...');
         const result = await generateVisionBoardAnalysis(answers);
         setAnalysis(result);
 
-        // Update session with short analysis
+        // Update session with short analysis immediately after generation
+        console.log('Updating session with short analysis...');
         const { data: updateData, error: updateError } = await supabase
           .from('sessions')
           .update({ short_analysis: result })
@@ -94,30 +98,44 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     
     setIsSubmitting(true);
     setPdfGenerated(false);
+
     try {
-      const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
-      
-      // Update session with email and comprehensive analysis
-      const { data: updateData, error: updateError } = await supabase
+      // First, update the email immediately
+      console.log('Updating session with email...');
+      const { data: emailUpdateData, error: emailUpdateError } = await supabase
         .from('sessions')
-        .update({
-          email,
-          comprehensive_analysis: fullAnalysis
-        })
+        .update({ email })
         .eq('id', sessionId)
         .select();
 
-      if (updateError) {
-        console.error('Session update error:', updateError);
-        throw updateError;
+      if (emailUpdateError) {
+        console.error('Email update error:', emailUpdateError);
+        throw emailUpdateError;
       }
       
-      console.log('Session updated with email and comprehensive analysis:', updateData);
+      console.log('Session updated with email:', emailUpdateData);
+
+      // Then generate the comprehensive analysis and PDF
+      console.log('Generating comprehensive analysis and PDF...');
+      const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
       
-      // Convert the PDF bytes array back to a Uint8Array and create a blob
+      // Update session with comprehensive analysis after generation
+      console.log('Updating session with comprehensive analysis...');
+      const { data: analysisUpdateData, error: analysisUpdateError } = await supabase
+        .from('sessions')
+        .update({ comprehensive_analysis: fullAnalysis })
+        .eq('id', sessionId)
+        .select();
+
+      if (analysisUpdateError) {
+        console.error('Comprehensive analysis update error:', analysisUpdateError);
+        throw analysisUpdateError;
+      }
+      
+      console.log('Session updated with comprehensive analysis:', analysisUpdateData);
+      
+      // Handle PDF download
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
-      
-      // Create a download link and trigger it
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
@@ -133,7 +151,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         description: "Your comprehensive vision board analysis has been downloaded.",
       });
     } catch (error) {
-      console.error('Error generating comprehensive analysis:', error);
+      console.error('Error in email submission process:', error);
       toast({
         title: "Error",
         description: "Failed to generate your comprehensive analysis. Please try again.",
