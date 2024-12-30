@@ -65,8 +65,7 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
     }
 
     if (!updateData) {
-      console.error('No data returned after updating analysis');
-      throw new Error('Failed to update session with analysis');
+      throw new Error('No data returned after updating analysis');
     }
 
     return updateData;
