@@ -2,32 +2,33 @@ import { useState } from "react";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuestionCard } from "@/components/QuestionCard";
 import { VisionBoard } from "@/components/VisionBoard";
-import { questions } from "@/data/questions";
+import { questions, getAllQuestions, getNextQuestion } from "@/data/questions";
 
 const Index = () => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionId, setCurrentQuestionId] = useState(questions[0].id);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isComplete, setIsComplete] = useState(false);
 
-  const progress = ((currentQuestionIndex) / questions.length) * 100;
+  const allQuestions = getAllQuestions(questions);
+  const currentQuestion = allQuestions.find(q => q.id === currentQuestionId);
+  const progress = (allQuestions.findIndex(q => q.id === currentQuestionId) / allQuestions.length) * 100;
 
   const handleNext = (answer: string) => {
-    const currentQuestion = questions[currentQuestionIndex];
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.question]: answer,
-    }));
+    const updatedAnswers = { ...answers, [currentQuestion!.question]: answer };
+    setAnswers(updatedAnswers);
 
-    if (currentQuestionIndex === questions.length - 1) {
-      setIsComplete(true);
+    const nextQuestion = getNextQuestion(currentQuestionId, updatedAnswers);
+    if (nextQuestion) {
+      setCurrentQuestionId(nextQuestion.id);
     } else {
-      setCurrentQuestionIndex((prev) => prev + 1);
+      setIsComplete(true);
     }
   };
 
   const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
+    const currentIndex = allQuestions.findIndex(q => q.id === currentQuestionId);
+    if (currentIndex > 0) {
+      setCurrentQuestionId(allQuestions[currentIndex - 1].id);
     }
   };
 
@@ -39,16 +40,18 @@ const Index = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-4xl mb-8">
         <h2 className="text-xl font-medium text-muted-foreground mb-4">
-          {questions[currentQuestionIndex].category}
+          {currentQuestion?.category}
         </h2>
         <ProgressBar progress={progress} />
       </div>
       
-      <QuestionCard
-        {...questions[currentQuestionIndex]}
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-      />
+      {currentQuestion && (
+        <QuestionCard
+          {...currentQuestion}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+        />
+      )}
     </div>
   );
 };
