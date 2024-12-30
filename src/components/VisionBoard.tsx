@@ -15,6 +15,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pdfGenerated, setPdfGenerated] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
   const handleEmailSubmit = async () => {
     setIsSubmitting(true);
+    setPdfGenerated(false);
     try {
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
       
@@ -54,6 +56,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
+      setPdfGenerated(true);
       toast({
         title: "Success!",
         description: "Your comprehensive vision board analysis has been downloaded.",
@@ -71,15 +74,15 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
   const formatMarkdown = (text: string) => {
     return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-      .replace(/#{3} (.*?)\n/g, '<h3 class="text-xl font-semibold my-3">$1</h3>') // H3
-      .replace(/#{2} (.*?)\n/g, '<h2 class="text-2xl font-bold my-4">$1</h2>') // H2
-      .replace(/#{1} (.*?)\n/g, '<h1 class="text-3xl font-bold my-5">$1</h1>') // H1
-      .replace(/\n\n/g, '<br/><br/>') // Double line breaks
-      .replace(/\n/g, '<br/>') // Single line breaks
-      .replace(/- (.*?)(<br\/>|$)/g, '<li class="ml-4">$1</li>') // List items
-      .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded">$1</code>'); // Code
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/#{3} (.*?)\n/g, '<h3 class="text-xl font-semibold my-3">$1</h3>')
+      .replace(/#{2} (.*?)\n/g, '<h2 class="text-2xl font-bold my-4">$1</h2>')
+      .replace(/#{1} (.*?)\n/g, '<h1 class="text-3xl font-bold my-5">$1</h1>')
+      .replace(/\n\n/g, '<br/><br/>')
+      .replace(/\n/g, '<br/>')
+      .replace(/- (.*?)(<br\/>|$)/g, '<li class="ml-4">$1</li>')
+      .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded">$1</code>');
   };
 
   return (
@@ -112,20 +115,27 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         <p className="text-muted-foreground mb-4">
           Enter your email to receive a detailed vision board review with personalized recommendations, action steps, and a comprehensive PDF report.
         </p>
-        <div className="flex gap-4">
-          <Input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1"
-          />
-          <Button 
-            onClick={handleEmailSubmit}
-            disabled={!email || isSubmitting}
-          >
-            {isSubmitting ? "Generating..." : "Download PDF Report"}
-          </Button>
+        <div className="space-y-4">
+          <div className="flex gap-4">
+            <Input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleEmailSubmit}
+              disabled={!email || isSubmitting}
+            >
+              {isSubmitting ? "Generating..." : "Download PDF Report"}
+            </Button>
+          </div>
+          {pdfGenerated && (
+            <div className="text-sm text-green-600 font-medium">
+              ✓ Your PDF report has been successfully generated and downloaded!
+            </div>
+          )}
         </div>
       </div>
 
