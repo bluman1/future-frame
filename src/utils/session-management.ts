@@ -65,7 +65,8 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
     }
 
     if (!updateData) {
-      throw new Error('No data returned after updating analysis');
+      console.error('No data returned after updating analysis');
+      throw new Error('No session found to update analysis');
     }
 
     return updateData;
@@ -96,7 +97,8 @@ export const updateSessionWithEmail = async (sessionId: string, email: string) =
     }
 
     if (!emailUpdateData) {
-      throw new Error('No data returned after updating email');
+      console.error('No data returned after updating email');
+      throw new Error('No session found to update email');
     }
 
     return emailUpdateData;
