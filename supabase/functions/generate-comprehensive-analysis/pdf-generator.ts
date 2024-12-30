@@ -25,7 +25,9 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
   // Helper function to format markdown text
   const formatMarkdown = (text: string): string => {
     // Remove markdown bold syntax and handle the text separately
-    return text.replace(/\*\*(.*?)\*\*/g, '$1');
+    return text.replace(/\*\*(.*?)\*\*/g, '$1')
+              .replace(/\n/g, ' ') // Replace newlines with spaces
+              .trim();
   };
 
   // Helper function to check if text should be bold (was previously wrapped in **)
@@ -50,7 +52,7 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
     }
 
     const maxWidth = width - 2 * margin - indent;
-    const words = text.split(' ');
+    const words = text.split(' ').filter(word => word.length > 0); // Filter out empty strings
     let currentLine = '';
     let currentWords: string[] = [];
 
@@ -66,13 +68,15 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
         currentLine = currentWords.join(' ');
         const lineFont = shouldBeBold(currentLine, originalText) ? timesBoldFont : timesRomanFont;
         
-        currentPage.drawText(currentLine, {
-          x: margin + indent,
-          y: yPosition,
-          size: size,
-          font: lineFont,
-          color: rgb(0, 0, 0),
-        });
+        if (currentLine.trim()) {
+          currentPage.drawText(currentLine.trim(), {
+            x: margin + indent,
+            y: yPosition,
+            size: size,
+            font: lineFont,
+            color: rgb(0, 0, 0),
+          });
+        }
         
         yPosition -= lineHeight;
         currentWords = [word];
@@ -87,35 +91,39 @@ export async function generatePDF(content: string): Promise<Uint8Array> {
       currentLine = currentWords.join(' ');
       const font = shouldBeBold(currentLine, originalText) ? timesBoldFont : timesRomanFont;
       
-      currentPage.drawText(currentLine, {
-        x: margin + indent,
-        y: yPosition,
-        size: size,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
+      if (currentLine.trim()) {
+        currentPage.drawText(currentLine.trim(), {
+          x: margin + indent,
+          y: yPosition,
+          size: size,
+          font: font,
+          color: rgb(0, 0, 0),
+        });
+      }
       yPosition -= lineHeight;
     }
   };
 
-  // Process markdown-like content
-  const sections = content.split('\n\n').map(section => section.trim());
+  // Process markdown-like content by splitting on double newlines
+  const sections = content.split('\n\n').map(section => section.trim()).filter(section => section.length > 0);
   
   for (const section of sections) {
-    if (!section) continue;
-
     // Store original text for bold checking
     const originalText = section;
 
     if (section.startsWith('# ')) {
-      writeText(section.substring(2), originalText, { fontSize: titleSize, font: timesBoldFont });
+      // Handle main titles
+      writeText(section.substring(2), originalText, { fontSize: titleSize });
       yPosition -= lineHeight;
     } else if (section.startsWith('## ')) {
-      writeText(section.substring(3), originalText, { fontSize: titleSize - 2, font: timesBoldFont });
+      // Handle subtitles
+      writeText(section.substring(3), originalText, { fontSize: titleSize - 2 });
       yPosition -= lineHeight;
     } else if (section.startsWith('- ')) {
+      // Handle bullet points
       writeText('•' + section.substring(1), originalText, { indent: 20 });
     } else {
+      // Handle regular paragraphs
       writeText(section, originalText);
       yPosition -= lineHeight / 2;
     }
