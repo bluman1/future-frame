@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { generateVisionBoardAnalysis } from "@/utils/openai";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 
 interface VisionBoardProps {
@@ -12,6 +13,8 @@ interface VisionBoardProps {
 export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   const [analysis, setAnalysis] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,6 +35,17 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
     fetchAnalysis();
   }, [answers]);
+
+  const handleEmailSubmit = async () => {
+    setIsSubmitting(true);
+    // Here you would typically send the email to your backend
+    // For now, we'll just show a success message
+    toast({
+      title: "Success!",
+      description: "We'll send your comprehensive vision board review shortly.",
+    });
+    setIsSubmitting(false);
+  };
 
   return (
     <div
@@ -55,6 +69,29 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
             dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, '<br/>') }}
           />
         )}
+      </div>
+
+      {/* Email Collection Form */}
+      <div className="p-6 rounded-xl bg-secondary/50 backdrop-blur-sm">
+        <h3 className="text-xl font-semibold mb-4">Get Your Comprehensive Review</h3>
+        <p className="text-muted-foreground mb-4">
+          Enter your email to receive a detailed vision board review with personalized recommendations and action steps.
+        </p>
+        <div className="flex gap-4">
+          <Input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex-1"
+          />
+          <Button 
+            onClick={handleEmailSubmit}
+            disabled={!email || isSubmitting}
+          >
+            {isSubmitting ? "Sending..." : "Send to Email"}
+          </Button>
+        </div>
       </div>
 
       {/* Original Answers Section */}
