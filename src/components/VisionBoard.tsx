@@ -47,6 +47,19 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     setIsSubmitting(false);
   };
 
+  const formatMarkdown = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+      .replace(/#{3} (.*?)\n/g, '<h3 class="text-xl font-semibold my-3">$1</h3>') // H3
+      .replace(/#{2} (.*?)\n/g, '<h2 class="text-2xl font-bold my-4">$1</h2>') // H2
+      .replace(/#{1} (.*?)\n/g, '<h1 class="text-3xl font-bold my-5">$1</h1>') // H1
+      .replace(/\n\n/g, '<br/><br/>') // Double line breaks
+      .replace(/\n/g, '<br/>') // Single line breaks
+      .replace(/- (.*?)(<br\/>|$)/g, '<li class="ml-4">$1</li>') // List items
+      .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded">$1</code>'); // Code
+  };
+
   return (
     <div
       className={cn(
@@ -66,7 +79,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         ) : (
           <div 
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: analysis.replace(/\n/g, '<br/>') }}
+            dangerouslySetInnerHTML={{ __html: formatMarkdown(analysis) }}
           />
         )}
       </div>
