@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { QuestionOption } from "@/data/questions";
+import { QuestionOption } from "@/data/types";
 
 interface QuestionCardProps {
   question: string;
