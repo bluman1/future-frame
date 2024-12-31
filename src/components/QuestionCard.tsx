@@ -87,31 +87,35 @@ export const QuestionCard = ({
   return (
     <div
       className={cn(
-        "w-full max-w-lg mx-auto p-8 rounded-2xl bg-card shadow-lg animate-fade-up",
+        "w-full max-w-lg mx-auto p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100/50 shadow-xl animate-fade-up",
+        "hover:shadow-purple-200/50 transition-all duration-300",
         className
       )}
     >
-      <h2 className="text-2xl font-medium mb-6 text-card-foreground">{question}</h2>
+      <h2 className="text-2xl font-medium mb-6 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
+        {question}
+      </h2>
       
       {type === "text" ? (
         <Input
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          className="mb-6"
+          className="mb-6 bg-white/50 border-purple-100 focus:border-purple-200 transition-colors"
           placeholder="Type your answer here..."
         />
       ) : type === "checkbox" ? (
         <div className="space-y-3 mb-6">
           {options.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <div key={option.value} className="flex items-center space-x-2 group">
               <Checkbox
                 id={option.value}
                 checked={selectedOptions.includes(option.value)}
                 onCheckedChange={() => handleCheckboxChange(option.value)}
+                className="border-purple-200 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
               />
               <label
                 htmlFor={option.value}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 group-hover:text-purple-700 transition-colors"
               >
                 {option.label}
               </label>
@@ -122,7 +126,7 @@ export const QuestionCard = ({
               value={otherInput}
               onChange={(e) => setOtherInput(e.target.value.slice(0, 100))}
               placeholder="Specify other (max 100 characters)..."
-              className="mt-2"
+              className="mt-2 bg-white/50 border-purple-100 focus:border-purple-200 transition-colors"
             />
           )}
         </div>
@@ -135,8 +139,8 @@ export const QuestionCard = ({
               className={cn(
                 "w-full p-4 text-left rounded-lg transition-all duration-200",
                 answer === option.value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary hover:bg-secondary/80"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md"
+                  : "bg-white/50 hover:bg-white hover:shadow-md text-gray-700 hover:text-purple-700"
               )}
             >
               {option.label}
@@ -147,7 +151,7 @@ export const QuestionCard = ({
               value={otherInput}
               onChange={(e) => setOtherInput(e.target.value.slice(0, 100))}
               placeholder="Specify other (max 100 characters)..."
-              className="mt-2"
+              className="mt-2 bg-white/50 border-purple-100 focus:border-purple-200 transition-colors"
             />
           )}
         </div>
@@ -157,7 +161,7 @@ export const QuestionCard = ({
         <Button
           variant="outline"
           onClick={onPrevious}
-          className="transition-all duration-200 hover:translate-x-[-4px]"
+          className="transition-all duration-200 hover:translate-x-[-4px] bg-white hover:bg-purple-50"
         >
           Previous
         </Button>
@@ -168,7 +172,7 @@ export const QuestionCard = ({
               ? selectedOptions.length === 0 || (selectedOptions.includes("other") && !otherInput.trim())
               : !answer.trim() || (answer === "other" && !otherInput.trim())
           }
-          className="transition-all duration-200 hover:translate-x-[4px]"
+          className="transition-all duration-200 hover:translate-x-[4px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
         >
           Next
         </Button>
