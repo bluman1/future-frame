@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { AnalysisSection } from "./vision-board/AnalysisSection";
 import { EmailSection } from "./vision-board/EmailSection";
 import { AnswersSection } from "./vision-board/AnswersSection";
-import { createNewSession, updateSessionWithAnalysis, updateSessionWithEmail } from "@/utils/session-management";
+import { createNewSession, updateSessionWithEmail } from "@/utils/session-management";
 
 interface VisionBoardProps {
   answers: Record<string, string>;
@@ -27,11 +27,6 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
       setIsLoading(true);
       try {
-        console.log('Creating new session with answers:', answers);
-        const session = await createNewSession(answers);
-        console.log('Session created successfully:', session);
-        setSessionId(session.id);
-        
         console.log('Generating initial analysis...');
         const result = await generateVisionBoardAnalysis(answers);
         
@@ -42,9 +37,10 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
         console.log('Analysis generated successfully:', result);
         setAnalysis(result);
         
-        console.log('Updating session with analysis...');
-        await updateSessionWithAnalysis(session.id, result);
-        console.log('Session updated with analysis');
+        console.log('Creating new session with answers and analysis:', answers);
+        const session = await createNewSession(answers, result);
+        console.log('Session created successfully:', session);
+        setSessionId(session.id);
       } catch (error) {
         console.error('Error initializing session:', error);
         toast({
@@ -75,16 +71,16 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     setPdfGenerated(false);
 
     try {
-      console.log('Updating session with email...');
-      await updateSessionWithEmail(sessionId, email);
-      console.log('Email updated successfully');
-
       console.log('Generating comprehensive analysis and PDF...');
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
       
       if (!fullAnalysis || !pdf) {
         throw new Error('Failed to generate comprehensive analysis or PDF');
       }
+
+      console.log('Updating session with email and comprehensive analysis...');
+      await updateSessionWithEmail(sessionId, email, fullAnalysis);
+      console.log('Email and analysis updated successfully');
 
       // Handle PDF download
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
@@ -153,4 +149,3 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       <AnswersSection answers={answers} />
     </div>
   );
-};

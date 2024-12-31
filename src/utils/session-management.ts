@@ -1,8 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export const createNewSession = async (answers: Record<string, string>) => {
+export const createNewSession = async (answers: Record<string, string>, initialAnalysis: string) => {
   try {
-    console.log('Creating new session...');
+    console.log('Creating new session with answers and analysis...');
+    
+    // First create the session
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert([{}])
@@ -21,11 +23,19 @@ export const createNewSession = async (answers: Record<string, string>) => {
     
     console.log('Session created:', session);
 
-    const answersToInsert = Object.entries(answers).map(([question, answer]) => ({
-      session_id: session.id,
-      question,
-      answer
-    }));
+    // Prepare answers including the initial analysis
+    const answersToInsert = [
+      ...Object.entries(answers).map(([question, answer]) => ({
+        session_id: session.id,
+        question,
+        answer
+      })),
+      {
+        session_id: session.id,
+        question: '_initial_analysis',
+        answer: initialAnalysis
+      }
+    ];
 
     const { error: answersError } = await supabase
       .from('session_answers')
@@ -43,58 +53,32 @@ export const createNewSession = async (answers: Record<string, string>) => {
   }
 };
 
-export const updateSessionWithAnalysis = async (sessionId: string, analysis: string) => {
+export const updateSessionWithEmail = async (sessionId: string, email: string, comprehensiveAnalysis: string) => {
   try {
-    console.log('Updating session with analysis...', { sessionId, analysis });
+    console.log('Updating session with email and comprehensive analysis...', { sessionId, email });
     
-    const { data: updateData, error: updateError } = await supabase
-      .from('sessions')
-      .update({ short_analysis: analysis })
-      .eq('id', sessionId)
-      .select()
-      .single();
+    const emailAnswer = {
+      session_id: sessionId,
+      question: '_email',
+      answer: email
+    };
+
+    const analysisAnswer = {
+      session_id: sessionId,
+      question: '_comprehensive_analysis',
+      answer: comprehensiveAnalysis
+    };
+
+    const { error: updateError } = await supabase
+      .from('session_answers')
+      .insert([emailAnswer, analysisAnswer]);
 
     if (updateError) {
-      console.error('Analysis update error:', updateError);
+      console.error('Email and analysis update error:', updateError);
       throw updateError;
     }
 
-    if (!updateData) {
-      console.error('No data returned after updating analysis');
-      throw new Error('Session not found');
-    }
-
-    console.log('Analysis update successful:', updateData);
-    return updateData;
-  } catch (error) {
-    console.error('Error in updateSessionWithAnalysis:', error);
-    throw error;
-  }
-};
-
-export const updateSessionWithEmail = async (sessionId: string, email: string) => {
-  try {
-    console.log('Updating session with email...', { sessionId, email });
-    
-    const { data: emailUpdateData, error: emailUpdateError } = await supabase
-      .from('sessions')
-      .update({ email })
-      .eq('id', sessionId)
-      .select()
-      .single();
-
-    if (emailUpdateError) {
-      console.error('Email update error:', emailUpdateError);
-      throw emailUpdateError;
-    }
-
-    if (!emailUpdateData) {
-      console.error('No data returned after updating email');
-      throw new Error('Session not found');
-    }
-
-    console.log('Email update successful:', emailUpdateData);
-    return emailUpdateData;
+    return true;
   } catch (error) {
     console.error('Error in updateSessionWithEmail:', error);
     throw error;

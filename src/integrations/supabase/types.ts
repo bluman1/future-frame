@@ -43,25 +43,16 @@ export type Database = {
       }
       sessions: {
         Row: {
-          comprehensive_analysis: string | null
           created_at: string | null
-          email: string | null
           id: string
-          short_analysis: string | null
         }
         Insert: {
-          comprehensive_analysis?: string | null
           created_at?: string | null
-          email?: string | null
           id?: string
-          short_analysis?: string | null
         }
         Update: {
-          comprehensive_analysis?: string | null
           created_at?: string | null
-          email?: string | null
           id?: string
-          short_analysis?: string | null
         }
         Relationships: []
       }
