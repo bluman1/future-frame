@@ -24,9 +24,10 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        if (!sessionId) {  // Only create a new session if we don't have one
+        if (!sessionId) {
           console.log('Creating new session...');
           const session = await createNewSession(answers);
+          console.log('Session created successfully:', session);
           setSessionId(session.id);
           
           console.log('Generating initial analysis...');
@@ -36,10 +37,12 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
             throw new Error('Failed to generate initial analysis');
           }
           
+          console.log('Analysis generated successfully:', result);
           setAnalysis(result);
           
-          // Update session with analysis
+          console.log('Updating session with analysis...');
           await updateSessionWithAnalysis(session.id, result);
+          console.log('Session updated with analysis');
         }
       } catch (error) {
         console.error('Error initializing session:', error);
@@ -54,7 +57,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     };
 
     initializeSession();
-  }, [answers]);
+  }, [answers, sessionId]);
 
   const handleEmailSubmit = async () => {
     if (!sessionId) {
@@ -71,10 +74,10 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     setPdfGenerated(false);
 
     try {
-      // Update email in the same session
+      console.log('Updating session with email...');
       await updateSessionWithEmail(sessionId, email);
+      console.log('Email updated successfully');
 
-      // Generate comprehensive analysis and PDF
       console.log('Generating comprehensive analysis and PDF...');
       const { analysis: fullAnalysis, pdf } = await generateComprehensiveAnalysis(answers);
       

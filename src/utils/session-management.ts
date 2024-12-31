@@ -40,11 +40,6 @@ export const createNewSession = async (answers: Record<string, string>) => {
     return session;
   } catch (error) {
     console.error('Error in createNewSession:', error);
-    toast({
-      title: "Error",
-      description: "Failed to create session. Please try again.",
-      variant: "destructive",
-    });
     throw error;
   }
 };
@@ -52,6 +47,21 @@ export const createNewSession = async (answers: Record<string, string>) => {
 export const updateSessionWithAnalysis = async (sessionId: string, analysis: string) => {
   try {
     console.log('Updating session with analysis...', sessionId);
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (sessionError) {
+      console.error('Session fetch error:', sessionError);
+      throw sessionError;
+    }
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
     const { data: updateData, error: updateError } = await supabase
       .from('sessions')
       .update({ short_analysis: analysis })
@@ -65,18 +75,12 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
     }
 
     if (!updateData) {
-      console.error('No data returned after updating analysis');
-      throw new Error('No session found to update analysis');
+      throw new Error('No data returned after updating analysis');
     }
 
     return updateData;
   } catch (error) {
     console.error('Error in updateSessionWithAnalysis:', error);
-    toast({
-      title: "Error",
-      description: "Failed to save analysis. Please try again.",
-      variant: "destructive",
-    });
     throw error;
   }
 };
@@ -84,6 +88,21 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
 export const updateSessionWithEmail = async (sessionId: string, email: string) => {
   try {
     console.log('Updating session with email...', sessionId);
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .maybeSingle();
+
+    if (sessionError) {
+      console.error('Session fetch error:', sessionError);
+      throw sessionError;
+    }
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
     const { data: emailUpdateData, error: emailUpdateError } = await supabase
       .from('sessions')
       .update({ email })
@@ -97,18 +116,12 @@ export const updateSessionWithEmail = async (sessionId: string, email: string) =
     }
 
     if (!emailUpdateData) {
-      console.error('No data returned after updating email');
-      throw new Error('No session found to update email');
+      throw new Error('No data returned after updating email');
     }
 
     return emailUpdateData;
   } catch (error) {
     console.error('Error in updateSessionWithEmail:', error);
-    toast({
-      title: "Error",
-      description: "Failed to save email. Please try again.",
-      variant: "destructive",
-    });
     throw error;
   }
 };
