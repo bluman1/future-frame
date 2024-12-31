@@ -124,29 +124,37 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   };
 
   return (
-    <div
-      className={cn(
-        "w-full max-w-4xl mx-auto p-8 rounded-2xl bg-card shadow-lg animate-fade-up space-y-8",
-        className
-      )}
-    >
-      <h2 className="text-3xl font-bold mb-8 text-center">Your Vision Board</h2>
+    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-purple-50 py-12 px-4 relative">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-100/20 via-transparent to-pink-100/20 pointer-events-none" />
       
-      <AnalysisSection 
-        isLoading={isLoading}
-        analysis={analysis}
-        formatMarkdown={formatMarkdown}
-      />
+      <div
+        className={cn(
+          "relative z-10 w-full max-w-4xl mx-auto p-8 rounded-2xl bg-white/80 backdrop-blur-sm shadow-xl animate-fade-up space-y-8 border border-purple-100/50",
+          className
+        )}
+      >
+        <h2 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          Your Vision Board
+        </h2>
+        
+        <AnalysisSection 
+          isLoading={isLoading}
+          analysis={analysis}
+          formatMarkdown={formatMarkdown}
+        />
 
-      <EmailSection 
-        email={email}
-        setEmail={setEmail}
-        handleEmailSubmit={handleEmailSubmit}
-        isSubmitting={isSubmitting}
-        pdfGenerated={pdfGenerated}
-      />
+        <EmailSection 
+          email={email}
+          setEmail={setEmail}
+          handleEmailSubmit={handleEmailSubmit}
+          isSubmitting={isSubmitting}
+          pdfGenerated={pdfGenerated}
+        />
 
-      <AnswersSection answers={answers} />
+        <AnswersSection answers={answers} />
+      </div>
     </div>
   );
 };

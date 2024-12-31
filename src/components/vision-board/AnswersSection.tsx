@@ -8,12 +8,12 @@ export const AnswersSection = ({ answers }: AnswersSectionProps) => {
       {Object.entries(answers).map(([question, answer]) => (
         <div
           key={question}
-          className="p-6 rounded-xl bg-secondary/50 backdrop-blur-sm"
+          className="group p-6 rounded-xl bg-gradient-to-br from-purple-50/50 to-pink-50/50 backdrop-blur-sm border border-purple-100/50 transition-all duration-300 hover:shadow-lg"
         >
-          <h3 className="font-medium text-sm text-muted-foreground mb-2">
+          <h3 className="font-medium text-sm text-purple-600 mb-2 group-hover:text-purple-700 transition-colors">
             {question}
           </h3>
-          <p className="text-lg">{answer}</p>
+          <p className="text-lg text-gray-700">{answer}</p>
         </div>
       ))}
     </div>
