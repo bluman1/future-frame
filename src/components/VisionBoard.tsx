@@ -23,27 +23,28 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
 
   useEffect(() => {
     const initializeSession = async () => {
+      if (sessionId) return; // Skip if we already have a session
+
+      setIsLoading(true);
       try {
-        if (!sessionId) {
-          console.log('Creating new session...');
-          const session = await createNewSession(answers);
-          console.log('Session created successfully:', session);
-          setSessionId(session.id);
-          
-          console.log('Generating initial analysis...');
-          const result = await generateVisionBoardAnalysis(answers);
-          
-          if (!result) {
-            throw new Error('Failed to generate initial analysis');
-          }
-          
-          console.log('Analysis generated successfully:', result);
-          setAnalysis(result);
-          
-          console.log('Updating session with analysis...');
-          await updateSessionWithAnalysis(session.id, result);
-          console.log('Session updated with analysis');
+        console.log('Creating new session with answers:', answers);
+        const session = await createNewSession(answers);
+        console.log('Session created successfully:', session);
+        setSessionId(session.id);
+        
+        console.log('Generating initial analysis...');
+        const result = await generateVisionBoardAnalysis(answers);
+        
+        if (!result) {
+          throw new Error('Failed to generate initial analysis');
         }
+        
+        console.log('Analysis generated successfully:', result);
+        setAnalysis(result);
+        
+        console.log('Updating session with analysis...');
+        await updateSessionWithAnalysis(session.id, result);
+        console.log('Session updated with analysis');
       } catch (error) {
         console.error('Error initializing session:', error);
         toast({
@@ -57,7 +58,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     };
 
     initializeSession();
-  }, [answers, sessionId]);
+  }, [answers, sessionId, toast]);
 
   const handleEmailSubmit = async () => {
     if (!sessionId) {

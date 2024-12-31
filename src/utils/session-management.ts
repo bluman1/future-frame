@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
 
 export const createNewSession = async (answers: Record<string, string>) => {
   try {
@@ -7,8 +6,8 @@ export const createNewSession = async (answers: Record<string, string>) => {
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert([{}])
-      .select('*')
-      .maybeSingle();
+      .select()
+      .single();
 
     if (sessionError) {
       console.error('Session creation error:', sessionError);
@@ -16,12 +15,12 @@ export const createNewSession = async (answers: Record<string, string>) => {
     }
 
     if (!session) {
-      throw new Error('No session data returned after creation');
+      console.error('No session data returned after creation');
+      throw new Error('Failed to create session');
     }
     
     console.log('Session created:', session);
 
-    // Store all answers
     const answersToInsert = Object.entries(answers).map(([question, answer]) => ({
       session_id: session.id,
       question,
@@ -46,28 +45,14 @@ export const createNewSession = async (answers: Record<string, string>) => {
 
 export const updateSessionWithAnalysis = async (sessionId: string, analysis: string) => {
   try {
-    console.log('Updating session with analysis...', sessionId);
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .maybeSingle();
-
-    if (sessionError) {
-      console.error('Session fetch error:', sessionError);
-      throw sessionError;
-    }
-
-    if (!session) {
-      throw new Error('Session not found');
-    }
-
+    console.log('Updating session with analysis...', { sessionId, analysis });
+    
     const { data: updateData, error: updateError } = await supabase
       .from('sessions')
       .update({ short_analysis: analysis })
       .eq('id', sessionId)
-      .select('*')
-      .maybeSingle();
+      .select()
+      .single();
 
     if (updateError) {
       console.error('Analysis update error:', updateError);
@@ -75,9 +60,11 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
     }
 
     if (!updateData) {
-      throw new Error('No data returned after updating analysis');
+      console.error('No data returned after updating analysis');
+      throw new Error('Session not found');
     }
 
+    console.log('Analysis update successful:', updateData);
     return updateData;
   } catch (error) {
     console.error('Error in updateSessionWithAnalysis:', error);
@@ -87,28 +74,14 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
 
 export const updateSessionWithEmail = async (sessionId: string, email: string) => {
   try {
-    console.log('Updating session with email...', sessionId);
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .maybeSingle();
-
-    if (sessionError) {
-      console.error('Session fetch error:', sessionError);
-      throw sessionError;
-    }
-
-    if (!session) {
-      throw new Error('Session not found');
-    }
-
+    console.log('Updating session with email...', { sessionId, email });
+    
     const { data: emailUpdateData, error: emailUpdateError } = await supabase
       .from('sessions')
       .update({ email })
       .eq('id', sessionId)
-      .select('*')
-      .maybeSingle();
+      .select()
+      .single();
 
     if (emailUpdateError) {
       console.error('Email update error:', emailUpdateError);
@@ -116,9 +89,11 @@ export const updateSessionWithEmail = async (sessionId: string, email: string) =
     }
 
     if (!emailUpdateData) {
-      throw new Error('No data returned after updating email');
+      console.error('No data returned after updating email');
+      throw new Error('Session not found');
     }
 
+    console.log('Email update successful:', emailUpdateData);
     return emailUpdateData;
   } catch (error) {
     console.error('Error in updateSessionWithEmail:', error);
