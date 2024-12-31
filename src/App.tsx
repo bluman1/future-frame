@@ -13,7 +13,7 @@ function App() {
           </Routes>
         </div>
         <footer className="py-4 text-center text-sm text-gray-600">
-          for you, from{" "}
+          for you, by{" "}
           <a
             href="https://x.com/_bluman"
             target="_blank"
