@@ -24,23 +24,23 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        // Create session and store answers
-        const session = await createNewSession(answers);
-        setSessionId(session.id);
-
-        // Generate initial analysis
-        console.log('Generating initial analysis...');
-        const result = await generateVisionBoardAnalysis(answers);
-        
-        if (!result) {
-          throw new Error('Failed to generate initial analysis');
+        if (!sessionId) {  // Only create a new session if we don't have one
+          console.log('Creating new session...');
+          const session = await createNewSession(answers);
+          setSessionId(session.id);
+          
+          console.log('Generating initial analysis...');
+          const result = await generateVisionBoardAnalysis(answers);
+          
+          if (!result) {
+            throw new Error('Failed to generate initial analysis');
+          }
+          
+          setAnalysis(result);
+          
+          // Update session with analysis
+          await updateSessionWithAnalysis(session.id, result);
         }
-        
-        setAnalysis(result);
-
-        // Update session with analysis
-        await updateSessionWithAnalysis(session.id, result);
-        
       } catch (error) {
         console.error('Error initializing session:', error);
         toast({
@@ -59,6 +59,11 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
   const handleEmailSubmit = async () => {
     if (!sessionId) {
       console.error('No session ID available');
+      toast({
+        title: "Error",
+        description: "Session not found. Please try again.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -66,7 +71,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
     setPdfGenerated(false);
 
     try {
-      // Update email
+      // Update email in the same session
       await updateSessionWithEmail(sessionId, email);
 
       // Generate comprehensive analysis and PDF

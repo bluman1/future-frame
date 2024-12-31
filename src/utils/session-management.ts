@@ -51,7 +51,7 @@ export const createNewSession = async (answers: Record<string, string>) => {
 
 export const updateSessionWithAnalysis = async (sessionId: string, analysis: string) => {
   try {
-    console.log('Updating session with analysis...');
+    console.log('Updating session with analysis...', sessionId);
     const { data: updateData, error: updateError } = await supabase
       .from('sessions')
       .update({ short_analysis: analysis })
@@ -83,7 +83,7 @@ export const updateSessionWithAnalysis = async (sessionId: string, analysis: str
 
 export const updateSessionWithEmail = async (sessionId: string, email: string) => {
   try {
-    console.log('Updating session with email...');
+    console.log('Updating session with email...', sessionId);
     const { data: emailUpdateData, error: emailUpdateError } = await supabase
       .from('sessions')
       .update({ email })
