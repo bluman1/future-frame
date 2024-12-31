@@ -149,3 +149,4 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       <AnswersSection answers={answers} />
     </div>
   );
+};
