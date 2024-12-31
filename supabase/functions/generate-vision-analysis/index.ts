@@ -1,7 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,13 +12,24 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Received request to generate vision analysis');
+    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+    
+    // Fetch the current prompt
+    const { data: promptData, error: promptError } = await supabase
+      .from('analysis_prompts')
+      .select('prompt')
+      .eq('id', 'initial_analysis')
+      .single();
+
+    if (promptError) {
+      throw promptError;
+    }
+
     const { answers } = await req.json();
     
     if (!answers || Object.keys(answers).length === 0) {
@@ -24,7 +38,6 @@ serve(async (req) => {
     }
 
     console.log('Formatting answers for analysis');
-    // Format the answers for the prompt
     const formattedAnswers = Object.entries(answers)
       .map(([question, answer]) => `${question}: ${answer}`)
       .join('\n');
@@ -41,13 +54,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a professional life coach and personal development expert. Analyze the user's vision board responses and provide:
-1. A concise summary of their goals and aspirations
-2. Key patterns or themes you notice
-3. 2-3 actionable recommendations
-4. Potential challenges and how to overcome them
-
-Keep your response clear, encouraging, and actionable. Format in markdown.`
+            content: promptData.prompt
           },
           {
             role: 'user',
