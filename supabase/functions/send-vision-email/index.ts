@@ -41,28 +41,30 @@ serve(async (req: Request) => {
       throw new Error('Failed to fetch analysis');
     }
 
-    // Convert PDF data back to Buffer/Uint8Array
-    const pdfBuffer = new Uint8Array(pdfData);
-    
-    // Create FormData for the attachment
-    const formData = new FormData();
-    formData.append('from', 'Vision Board <onboarding@resend.dev>');
-    formData.append('to', email);
-    formData.append('subject', 'Your Vision Board Analysis');
-    formData.append('html', `
-      <h1>Your Vision Board Analysis</h1>
-      <p>Thank you for using our Vision Board tool! Please find your comprehensive analysis attached as a PDF.</p>
-      <p>We hope this analysis helps you achieve your goals and aspirations!</p>
-    `);
-    formData.append('attachment', new Blob([pdfBuffer], { type: 'application/pdf' }), 'vision-board-analysis.pdf');
+    // Convert PDF data to base64
+    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfData)));
 
-    // Send email using Resend
+    // Send email using Resend with attachment
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        from: 'Vision Board <onboarding@resend.dev>',
+        to: email,
+        subject: 'Your Vision Board Analysis',
+        html: `
+          <h1>Your Vision Board Analysis</h1>
+          <p>Thank you for using our Vision Board tool! Please find your comprehensive analysis attached as a PDF.</p>
+          <p>We hope this analysis helps you achieve your goals and aspirations!</p>
+        `,
+        attachments: [{
+          filename: 'vision-board-analysis.pdf',
+          content: pdfBase64,
+        }],
+      }),
     });
 
     if (!res.ok) {

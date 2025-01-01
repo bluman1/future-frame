@@ -2,3 +2,6 @@ project_id = "npiwmxbftwwgyowngyxc"
 
 [functions.generate-vision-analysis]
 verify_jwt = false
+
+[functions.send-vision-email]
+verify_jwt = false
