@@ -10,6 +10,11 @@ interface EmailSectionProps {
   pdfGenerated: boolean;
 }
 
+const isValidEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 export const EmailSection = ({ 
   email, 
   setEmail, 
@@ -37,7 +42,7 @@ export const EmailSection = ({
             />
             <Button 
               onClick={handleEmailSubmit}
-              disabled={!email || isSubmitting}
+              disabled={!isValidEmail(email) || isSubmitting}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
             >
               {isSubmitting ? (
@@ -53,6 +58,11 @@ export const EmailSection = ({
               )}
             </Button>
           </div>
+          {email && !isValidEmail(email) && (
+            <div className="text-sm text-red-600 font-medium">
+              Please enter a valid email address
+            </div>
+          )}
           {pdfGenerated && (
             <div className="text-sm text-green-600 font-medium bg-green-50/50 p-3 rounded-lg border border-green-100">
               ✓ Your PDF report has been successfully generated and downloaded!

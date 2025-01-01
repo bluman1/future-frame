@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analysis_prompts: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          prompt: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_answers: {
         Row: {
           answer: string
