@@ -6,6 +6,7 @@ import { AnalysisSection } from "./vision-board/AnalysisSection";
 import { EmailSection } from "./vision-board/EmailSection";
 import { AnswersSection } from "./vision-board/AnswersSection";
 import { createNewSession, updateSessionWithEmail } from "@/utils/session-management";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VisionBoardProps {
   answers: Record<string, string>;
@@ -82,6 +83,21 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       await updateSessionWithEmail(sessionId, email, fullAnalysis);
       console.log('Email and analysis updated successfully');
 
+      // Send email with PDF
+      console.log('Sending email with PDF...');
+      const { error: emailError } = await supabase.functions.invoke('send-vision-email', {
+        body: {
+          sessionId,
+          email,
+          pdfData: Array.from(pdf),
+        },
+      });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+        throw new Error('Failed to send email');
+      }
+
       // Handle PDF download
       const pdfBlob = new Blob([new Uint8Array(pdf)], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(pdfBlob);
@@ -96,7 +112,7 @@ export const VisionBoard = ({ answers, className }: VisionBoardProps) => {
       setPdfGenerated(true);
       toast({
         title: "Success!",
-        description: "Your comprehensive vision board analysis has been downloaded.",
+        description: "Your comprehensive vision board analysis has been sent to your email and downloaded.",
       });
     } catch (error) {
       console.error('Error in email submission process:', error);
