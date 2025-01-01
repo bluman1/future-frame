@@ -32,9 +32,10 @@ export const EmailSection = ({
           Enter your email to receive a detailed vision board review with personalized recommendations, action steps, and a comprehensive PDF report.
         </p>
         <div className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Input
               type="email"
+              dir="ltr"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -43,7 +44,7 @@ export const EmailSection = ({
             <Button 
               onClick={handleEmailSubmit}
               disabled={!isValidEmail(email) || isSubmitting}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all duration-200 shadow-md hover:shadow-lg"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
