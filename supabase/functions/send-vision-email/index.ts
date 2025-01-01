@@ -52,7 +52,7 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Vision Board <onboarding@resend.dev>',
+        from: 'Vision Board <noreply@futureframe.michael.ng>',
         to: email,
         subject: 'Your Vision Board Analysis',
         html: `
